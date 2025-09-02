@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legend in the Mist - Game Server</title>
+    <!-- Google Fonts for Hero Card aesthetic -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+</head>
+<body>
+    <div id="app">
+        <!-- Connection Status -->
+        <div id="connection-status" class="status-bar">
+            <span id="status-text">Connecting...</span>
+            <div class="status-controls">
+                <span id="connection-indicator" class="indicator offline"></span>
+                <button id="refresh-state-btn" class="btn btn-small btn-refresh" title="Refresh game state" onclick="gameClient.refreshGameState()">
+                    🔄
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div id="main-content">
+            <!-- Welcome Screen -->
+            <div id="welcome-screen" class="screen active">
+                <div class="welcome-container">
+                    <h1>Legend in the Mist</h1>
+                    <p class="subtitle">Real-time RPG Game Server</p>
+                    
+                    <div class="join-form">
+                        <h2>Join a Game Session</h2>
+                        <form id="join-form">
+                            <div class="form-group">
+                                <label for="session-id">Session ID:</label>
+                                <input type="text" id="session-id" name="sessionId" 
+                                       placeholder="Enter session ID" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="player-name">Your Name:</label>
+                                <input type="text" id="player-name" name="player-name" required placeholder="Enter your name">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="is-gm" name="is-gm">
+                                    I am the Narrator
+                                </label>
+                            </div>
+                            
+                            <button type="button" id="join-session-btn" class="btn btn-primary">Join Session</button>
+                        </form>
+                        
+                        <div class="create-session">
+                            <p>Don't have a session ID? Create a new one:</p>
+                            <button id="create-session-btn" class="btn btn-secondary">Create New Session</button>
+                        </div>
+                        
+                        <!-- Saved Sessions Section -->
+                        <div class="saved-sessions-section">
+                            <h3>Saved Sessions</h3>
+                            <p>Click on a session to load it, or use "Load Players" to see who has played before:</p>
+                            <div id="saved-sessions" class="saved-sessions-list">
+                                <p style="color: #558b2f; font-style: italic;">Loading saved sessions...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Screen -->
+            <div id="game-screen" class="screen">
+                <div class="game-header">
+                    <h2 id="session-title"><span id="session-name">Loading...</span></h2>
+                    <div class="session-info">
+                        <span id="player-count">Players: 0</span>
+                        <button id="leave-session-btn" class="btn btn-small">Leave Session</button>
+                    </div>
+                </div>
+
+                <div class="game-layout">
+                    <!-- Left Panel - Players and Characters -->
+                    <div class="left-panel">
+                        <div class="panel-section">
+                            <h3>Players</h3>
+                            <div id="players-list" class="players-list">
+                                <!-- Players will be populated here -->
+                            </div>
+                        </div>
+                        
+                        <div class="panel-section">
+                            <h3>Characters</h3>
+                            <div id="characters-list" class="characters-list">
+                                <!-- Characters will be populated here -->
+                            </div>
+                            <button id="create-character-btn" class="btn btn-secondary">Create Character</button>
+                        </div>
+                        
+                        <div class="panel-section">
+                            <h3>Fellowship</h3>
+                            <div id="fellowship-list" class="fellowship-list">
+                                <!-- Fellowship tags will be populated here -->
+                            </div>
+                            <button id="edit-fellowship-btn" class="btn btn-secondary narrator-only">Edit Fellowship</button>
+                        </div>
+                    </div>
+
+                    <!-- Center Panel - Main Game Area -->
+                    <div class="center-panel">
+                        <div class="panel-section">
+                            <div class="scene-header">
+                                <h3>Scene</h3>
+                                                            <div class="scene-controls">
+                                <button id="manage-scenes-btn" class="btn btn-small narrator-only">Manage Scenes</button>
+                                <button id="present-challenge-btn" class="btn btn-small narrator-only">Present Challenge</button>
+                                <div class="challenges-dropdown narrator-only" style="display: none;">
+                                    <div id="challenges-dropdown-menu" class="challenges-dropdown-menu">
+                                        <!-- Challenge list will be populated here -->
+                                    </div>
+                                </div>
+                            </div>
+                            </div>
+                            <div id="scene-container" class="scene-container">
+                                <div id="scene-info" class="scene-info">
+                                    <div id="scene-image-container" class="scene-image-container">
+                                        <img id="scene-image" class="scene-image" src="" alt="Scene" style="display: none;">
+                                        <div id="scene-title-overlay" class="scene-title-overlay">
+                                            <h4 id="scene-title">New Scene</h4>
+                                        </div>
+                                        <div id="scene-tags-overlay" class="scene-tags-overlay">
+                                            <div id="scene-tags" class="scene-tags">
+                                                <!-- Scene tags will be populated here -->
+                                            </div>
+                                        </div>
+                                        <!-- Active Challenge Display (visible to players) -->
+                                        <div id="active-challenge-overlay" class="active-challenge-overlay" style="display: none;">
+                                            <div class="active-challenge-content">
+                                                <h3 id="active-challenge-title">Challenge Title</h3>
+                                                <div id="active-challenge-tags" class="active-challenge-tags">
+                                                    <!-- Active challenge tags will be populated here -->
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="scene-content">
+                                        <p id="scene-description" class="narrator-only">No description available.</p>
+                                        <!-- Active Challenge Details (visible to narrators) -->
+                                        <div id="active-challenge-details" class="narrator-only" style="display: none;">
+                                            <p id="active-challenge-details-text" class="challenge-detail-paragraph">Challenge details will appear here.</p>
+                                            <p id="active-challenge-success" class="challenge-detail-paragraph">Success: No success text available.</p>
+                                            <p id="active-challenge-consequences" class="challenge-detail-paragraph">Consequences: No consequences text available.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="panel-section">
+                            <h3>Dice Rolling</h3>
+                            <div class="dice-rolling-section">
+                                <div class="selected-tags-container empty" id="selected-tags-container">
+                                    <!-- Selected tags will appear here -->
+                                </div>
+                                <button id="roll-dice-btn" class="roll-button" disabled>Roll 2d6</button>
+                                <div id="dice-results" class="dice-results">
+                                    <!-- Dice results will appear here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Panel - Chat -->
+                    <div class="right-panel">
+                        <div class="panel-section chat-section">
+                            <h3>Chat</h3>
+                            <div id="chat-messages" class="chat-messages">
+                                <!-- Chat messages will appear here -->
+                            </div>
+                            <div class="chat-input">
+                                <input type="text" id="chat-input" placeholder="Type your message..." />
+                                <button id="send-chat-btn" class="btn btn-primary">Send</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Character Creation Modal -->
+        <div id="character-creation-overlay" class="character-creation-overlay hidden">
+            <div class="character-creation-modal">
+                <div class="character-creation-header">
+                    <h2>HERO CARD</h2>
+                </div>
+                <div class="character-creation-content">
+                    <form id="character-form" class="character-form">
+                        <!-- Basic Information -->
+                        <div class="character-section">
+                            <h3>Character Information</h3>
+                            <div class="character-input-group">
+                                <label for="character-name">Character Name</label>
+                                <input type="text" id="character-name" name="characterName" placeholder="Enter character name" required>
+                            </div>
+                            <div class="character-input-group">
+                                <label for="player-name-char">Player Name</label>
+                                <input type="text" id="player-name-char" name="playerName" placeholder="Enter player name" required>
+                            </div>
+                        </div>
+
+                        <!-- Promise -->
+                        <div class="character-section">
+                            <h3>Promise</h3>
+                            <div class="promise-section">
+                                <div class="promise-circles" id="promise-circles">
+                                    <div class="promise-circle" data-value="1"></div>
+                                    <div class="promise-circle" data-value="2"></div>
+                                    <div class="promise-circle" data-value="3"></div>
+                                    <div class="promise-circle" data-value="4"></div>
+                                    <div class="promise-circle" data-value="5"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Fellowship Relationships -->
+                        <div class="character-section">
+                            <h3>Fellowship Relationships</h3>
+                            <div class="relationships-section">
+                                <div class="relationship-group">
+                                    <div class="companions-container" id="companions-container">
+                                        <!-- Companion and relationship pairs will be populated here -->
+                                    </div>
+                                    <button type="button" class="add-companion-btn" id="add-companion-btn">Add Companion</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quintessences -->
+                        <div class="character-section">
+                            <h3>Quintessences</h3>
+                            <div class="quintessences-container" id="quintessences-container">
+                                <!-- Quintessence inputs will be populated here -->
+                            </div>
+                            <button type="button" class="add-quintessence-btn" id="add-quintessence-btn">Add Quintessence</button>
+                        </div>
+
+                        <!-- Backpack -->
+                        <div class="character-section">
+                            <h3>Backpack</h3>
+                            <div class="backpack-container" id="backpack-container">
+                                <!-- Backpack inputs will be populated here -->
+                            </div>
+                            <button type="button" class="add-backpack-btn" id="add-backpack-btn">Add Item</button>
+                        </div>
+
+                        <!-- Statuses -->
+                        <div class="character-section">
+                            <h3>Statuses</h3>
+                            <div class="statuses-container" id="statuses-container">
+                                <!-- Status items will be populated here -->
+                            </div>
+                            <button type="button" class="add-status-btn" id="add-status-btn">Add Status</button>
+                        </div>
+
+                        <!-- Theme Cards -->
+                        <div class="character-section">
+                            <h3>Theme Cards</h3>
+                            <div class="theme-cards-container" id="theme-cards-container">
+                                <!-- Theme cards will be populated here -->
+                            </div>
+                            <button type="button" class="add-theme-btn" id="add-theme-btn">Add Theme Card</button>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="character-section">
+                            <h3>Notes</h3>
+                            <div class="character-input-group">
+                                <label for="character-notes">Character Notes</label>
+                                <textarea id="character-notes" name="notes" placeholder="Additional notes about your character..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="character-actions">
+                            <button type="submit" class="btn btn-primary">Save Character</button>
+                            <button type="button" class="btn btn-secondary" id="cancel-character-btn">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scene Creation Modal -->
+        <div id="scene-creation-overlay" class="scene-creation-overlay hidden">
+            <div class="scene-creation-modal">
+                <div class="scene-creation-header">
+                    <h2>SCENE CREATION</h2>
+                </div>
+                <div class="scene-creation-content">
+                    <form id="scene-form" class="scene-form">
+                        <!-- Scene Information -->
+                        <div class="scene-section">
+                            <h3>Scene Information</h3>
+                            <div class="scene-input-group">
+                                <label for="scene-name">Scene Title</label>
+                                <input type="text" id="scene-name" name="sceneName" placeholder="Enter scene title" required>
+                            </div>
+                            <div class="scene-input-group">
+                                <label for="scene-image-upload">Scene Image</label>
+                                <input type="file" id="scene-image-upload" name="sceneImage" accept="image/*" class="scene-image-input">
+                                <div class="scene-image-preview" id="scene-image-preview" style="display: none;">
+                                    <img id="scene-preview-img" src="" alt="Scene preview">
+                                    <button type="button" id="remove-scene-image" class="remove-image-btn">Remove Image</button>
+                                </div>
+                                <p class="scene-image-help">Upload an image file (JPG, PNG, GIF, WebP). Maximum size: 10MB.</p>
+                            </div>
+                            <div class="scene-input-group">
+                                <label for="scene-description-input">Scene Description</label>
+                                <textarea id="scene-description-input" name="sceneDescription" placeholder="Enter scene description (visible only to Narrators)..." rows="4"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Scene Tags -->
+                        <div class="scene-section">
+                            <h3>Scene Tags</h3>
+                            <div class="scene-tags-input-container" id="scene-tags-input-container">
+                                <!-- Scene tag inputs will be populated here -->
+                            </div>
+                            <button type="button" class="add-scene-tag-btn" id="add-scene-tag-btn">Add Tag</button>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="scene-actions">
+                            <button type="submit" class="btn btn-primary">Create Scene</button>
+                            <button type="button" class="btn btn-secondary" id="cancel-scene-btn">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scene Management Modal -->
+        <div id="scene-management-overlay" class="scene-management-overlay hidden">
+            <div class="scene-management-modal">
+                <div class="scene-management-header">
+                    <h2>SCENE MANAGEMENT</h2>
+                    <button id="close-scene-management" class="close-btn">&times;</button>
+                </div>
+                <div class="scene-management-content">
+                    <div class="scene-management-toolbar">
+                        <button id="create-new-scene-btn" class="btn btn-primary">Create New Scene</button>
+                    </div>
+                    <div class="scenes-grid" id="scenes-grid">
+                        <!-- Scene cards will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Challenge Creation Modal -->
+        <div id="challenge-creation-overlay" class="challenge-creation-overlay hidden">
+            <div class="challenge-creation-modal">
+                <div class="challenge-creation-header">
+                    <h2>CHALLENGE CREATION</h2>
+                </div>
+                <div class="challenge-creation-content">
+                    <form id="challenge-form" class="challenge-form">
+                        <!-- Challenge Information -->
+                        <div class="challenge-section">
+                            <h3>Challenge Information</h3>
+                            <div class="challenge-input-group">
+                                <label for="challenge-title">Challenge Title</label>
+                                <input type="text" id="challenge-title" name="challengeTitle" placeholder="Enter challenge title" required>
+                            </div>
+                            <div class="challenge-input-group">
+                                <label for="challenge-details">Challenge Details</label>
+                                <textarea id="challenge-details" name="challengeDetails" placeholder="Enter challenge details..." rows="4"></textarea>
+                            </div>
+                            <div class="challenge-input-group">
+                                <label for="challenge-success">Success Outcome</label>
+                                <textarea id="challenge-success" name="challengeSuccess" placeholder="What happens on success..." rows="3"></textarea>
+                            </div>
+                            <div class="challenge-input-group">
+                                <label for="challenge-consequences">Consequences</label>
+                                <textarea id="challenge-consequences" name="challengeConsequences" placeholder="What happens on failure..." rows="3"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Challenge Tags -->
+                        <div class="challenge-section">
+                            <h3>Challenge Tags</h3>
+                            <div class="challenge-input-group">
+                                <label for="challenge-tags">Tags (comma-separated)</label>
+                                <input type="text" id="challenge-tags" name="challengeTags" placeholder="Enter tags separated by commas">
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="challenge-actions">
+                            <button type="submit" class="btn btn-primary">Create Challenge</button>
+                            <button type="button" class="btn btn-secondary" id="cancel-challenge-btn">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scene Editing Modal -->
+        <div id="scene-editing-overlay" class="scene-editing-overlay hidden">
+            <div class="scene-editing-modal">
+                <div class="scene-editing-header">
+                    <h2>EDIT SCENE</h2>
+                    <button id="close-scene-editing" class="close-btn">&times;</button>
+                </div>
+                <div class="scene-editing-content">
+                    <form id="scene-edit-form" class="scene-edit-form">
+                        <!-- Scene Information -->
+                        <div class="scene-section">
+                            <h3>Scene Information</h3>
+                            <div class="scene-input-group">
+                                <label for="scene-edit-name">Scene Title</label>
+                                <input type="text" id="scene-edit-name" name="sceneName" placeholder="Enter scene title" required>
+                            </div>
+                            <div class="scene-input-group">
+                                <label for="scene-edit-image-upload">Scene Image</label>
+                                <input type="file" id="scene-edit-image-upload" name="sceneImage" accept="image/*" class="scene-image-input">
+                                <div class="scene-image-preview" id="scene-edit-image-preview" style="display: none;">
+                                    <img id="scene-edit-preview-img" src="" alt="Scene preview">
+                                    <button type="button" id="remove-scene-edit-image" class="remove-image-btn">Remove Image</button>
+                                </div>
+                                <p class="scene-image-help">Upload an image file (JPG, PNG, GIF, WebP). Maximum size: 10MB.</p>
+                            </div>
+                            <div class="scene-input-group">
+                                <label for="scene-edit-description-input">Scene Description</label>
+                                <textarea id="scene-edit-description-input" name="sceneDescription" placeholder="Enter scene description (visible only to Narrators)..." rows="4"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Scene Tags -->
+                        <div class="scene-section">
+                            <h3>Scene Tags</h3>
+                            <div class="scene-tags-input-container" id="scene-edit-tags-input-container">
+                                <!-- Scene tag inputs will be populated here -->
+                            </div>
+                            <button type="button" class="add-scene-tag-btn" id="add-scene-edit-tag-btn">Add Tag</button>
+                        </div>
+
+                        <!-- Scene Challenges -->
+                        <div class="scene-section">
+                            <h3>Scene Challenges</h3>
+                            <div class="challenges-container" id="scene-edit-challenges-container">
+                                <!-- Existing challenges will be populated here -->
+                            </div>
+                            <button type="button" class="add-challenge-btn" id="add-scene-challenge-btn">Add Challenge</button>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="scene-actions">
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                            <button type="button" class="btn btn-secondary" id="cancel-scene-edit-btn">Cancel</button>
+                        </div>
+                    </form>
+
+                    <!-- Challenge Edit Form (hidden by default) -->
+                    <div class="scene-section" id="scene-challenge-edit-form" style="display: none;">
+                        <h3>Edit Challenge</h3>
+                        <form id="scene-challenge-edit-form-inner" class="challenge-edit-form">
+                            <div class="challenge-input-group">
+                                <label for="scene-challenge-edit-title">Challenge Title</label>
+                                <input type="text" id="scene-challenge-edit-title" name="challengeTitle" placeholder="Enter challenge title">
+                            </div>
+                            <div class="challenge-input-group">
+                                <label for="scene-challenge-edit-details">Challenge Details</label>
+                                <textarea id="scene-challenge-edit-details" name="challengeDetails" placeholder="Enter challenge details..." rows="4"></textarea>
+                            </div>
+                            <div class="challenge-input-group">
+                                <label for="scene-challenge-edit-success">Success Outcome</label>
+                                <textarea id="scene-challenge-edit-success" name="challengeSuccess" placeholder="What happens on success..." rows="3"></textarea>
+                            </div>
+                            <div class="challenge-input-group">
+                                <label for="scene-challenge-edit-consequences">Consequences</label>
+                                <textarea id="scene-challenge-edit-consequences" name="challengeConsequences" placeholder="What happens on failure..." rows="3"></textarea>
+                            </div>
+                            <div class="challenge-input-group">
+                                <label for="scene-challenge-edit-tags-input-container">Tags</label>
+                                <div id="scene-challenge-edit-tags-input-container" class="scene-tags-input-container">
+                                    <!-- Dynamic tag inputs will be added here -->
+                                </div>
+                                <button type="button" class="add-scene-tag-btn" id="add-scene-challenge-edit-tag-btn">Add Tag</button>
+                            </div>
+                            <div class="challenge-edit-actions">
+                                <button type="button" class="btn btn-primary" id="save-scene-challenge-edit-btn">Save Challenge</button>
+                                <button type="button" class="btn btn-secondary" id="cancel-scene-challenge-edit-btn">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Messages -->
+        <div id="error-container" class="error-container hidden">
+            <div class="error-message">
+                <span id="error-text"></span>
+                <button id="error-close" class="error-close">&times;</button>
+            </div>
+        </div>
+
+        <!-- Character Viewing Overlay -->
+        <div id="character-viewing-overlay" class="character-viewing-overlay hidden">
+            <div class="character-viewing-modal">
+                <div class="character-viewing-header">
+                    <h2 id="character-viewing-title">Character Sheet</h2>
+                    <button id="close-character-viewing" class="close-btn">&times;</button>
+                </div>
+                <div class="character-viewing-content">
+                    <div class="character-sheet">
+                        <!-- Character Basic Info -->
+                        <div class="character-basic-info">
+                            <div class="character-name-section">
+                                <h3 id="character-viewing-name">Character Name</h3>
+                                <p id="character-viewing-player">Player Name</p>
+                            </div>
+                            <div class="character-promise-section">
+                                <h4>Promise Progress</h4>
+                                <div class="promise-circles" id="character-viewing-promise">
+                                    <!-- Promise circles will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Character Tags Sections -->
+                        <div class="character-tags-sections">
+                            <!-- First pair: Quintessences and Companions & Relationships -->
+                            <div class="character-tags-pair">
+                                <div class="character-tags-section" id="character-viewing-quintessences">
+                                    <h4>Quintessences</h4>
+                                    <div class="character-tags-container">
+                                        <!-- Quintessence tags will be populated here -->
+                                    </div>
+                                </div>
+
+                                <div class="character-tags-section" id="character-viewing-companions">
+                                    <h4>Companions & Relationships</h4>
+                                    <div class="relationships-container">
+                                        <!-- Companion relationships will be populated here -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Second pair: Backpack and Statuses -->
+                            <div class="character-tags-pair">
+                                <div class="character-tags-section" id="character-viewing-backpack">
+                                    <h4>Backpack</h4>
+                                    <div class="character-tags-container">
+                                        <!-- Backpack items will be populated here -->
+                                    </div>
+                                </div>
+
+                                <div class="character-tags-section" id="character-viewing-statuses">
+                                    <h4>Statuses</h4>
+                                    <div class="statuses-container">
+                                        <!-- Status leaves will be populated here -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="character-tags-section" id="character-viewing-themes">
+                                <h4>Theme Cards</h4>
+                                <div class="theme-cards-container">
+                                    <!-- Theme cards will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Character Notes -->
+                        <div class="character-notes-section" id="character-viewing-notes">
+                            <h4>Notes</h4>
+                            <p id="character-viewing-notes-text">No notes available.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="loading-overlay hidden">
+            <div class="loading-spinner"></div>
+            <p>Loading...</p>
+        </div>
+
+        <!-- Fellowship Overlay -->
+        <div id="fellowship-overlay" class="fellowship-overlay hidden">
+            <div class="fellowship-modal">
+                <div class="fellowship-header">
+                    <h2>Edit Fellowship</h2>
+                    <button id="close-fellowship" class="close-btn">&times;</button>
+                </div>
+                <div class="fellowship-content">
+                    <form id="fellowship-form">
+                        <div class="fellowship-section">
+                            <h3>Fellowship Card</h3>
+                            <div class="theme-cards-container" id="fellowship-theme-cards-container">
+                                <!-- Fellowship card will be populated here -->
+                            </div>
+                        </div>
+                        <div class="fellowship-actions">
+                            <button type="submit" class="btn btn-primary">Save Fellowship</button>
+                            <button type="button" class="btn btn-secondary" id="cancel-fellowship">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Socket.io Client -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="module" src="scripts/GameClient.js"></script>
+</body>
+</html>
